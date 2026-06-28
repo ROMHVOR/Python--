@@ -1,0 +1,83 @@
+from typing import Any, Dict, Set, Optional
+import uuid
+
+
+class GraphNode:
+    """Класс для представления вершины графа"""
+    
+    def __init__(self, value: Any, node_id: Optional[str] = None):
+        """
+        Инициализация вершины
+        
+        Args:
+            value: Значение вершины
+            node_id: Уникальный идентификатор (генерируется автоматически)
+        """
+        self._id = node_id or str(uuid.uuid4())
+        self._value = value
+        self._neighbors: Set[str] = set()
+        self._attributes: Dict[str, Any] = {}
+    
+    @property
+    def id(self) -> str:
+        """Получить ID вершины"""
+        return self._id
+    
+    @property
+    def value(self) -> Any:
+        """Получить значение вершины"""
+        return self._value
+    
+    @value.setter
+    def value(self, new_value: Any) -> None:
+        """Установить новое значение вершины"""
+        self._value = new_value
+    
+    @property
+    def neighbors(self) -> Set[str]:
+        """Получить множество соседей вершины"""
+        return self._neighbors.copy()
+    
+    def add_neighbor(self, neighbor_id: str) -> None:
+        """Добавить соседа"""
+        self._neighbors.add(neighbor_id)
+    
+    def remove_neighbor(self, neighbor_id: str) -> None:
+        """Удалить соседа"""
+        self._neighbors.discard(neighbor_id)
+    
+    def get_attribute(self, key: str, default: Any = None) -> Any:
+        """Получить атрибут вершины"""
+        return self._attributes.get(key, default)
+    
+    def set_attribute(self, key: str, value: Any) -> None:
+        """Установить атрибут вершины"""
+        self._attributes[key] = value
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Преобразовать вершину в словарь для JSON"""
+        return {
+            'id': self._id,
+            'value': self._value,
+            'neighbors': list(self._neighbors),
+            'attributes': self._attributes
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'GraphNode':
+        """Создать вершину из словаря"""
+        node = cls(data['value'], data['id'])
+        node._neighbors = set(data.get('neighbors', []))
+        node._attributes = data.get('attributes', {})
+        return node
+    
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, GraphNode):
+            return False
+        return self._id == other._id
+    
+    def __hash__(self) -> int:
+        return hash(self._id)
+    
+    def __repr__(self) -> str:
+        return f"GraphNode(id={self._id[:8]}, value={self._value})"
