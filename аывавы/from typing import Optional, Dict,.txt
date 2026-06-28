@@ -1,0 +1,52 @@
+from typing import Optional, Dict, Any
+from .graph import Graph
+
+
+class DirectedGraph(Graph):
+    """Класс для ориентированного графа"""
+    
+    def add_edge(self, from_id: str, to_id: str, weight: Optional[float] = None) -> bool:
+        """Добавить ориентированное ребро"""
+        if from_id not in self._nodes or to_id not in self._nodes:
+            return False
+        
+        if to_id in self._edges[from_id]:
+            return False  # Ребро уже существует
+        
+        self._edges[from_id].add(to_id)
+        self._nodes[from_id].add_neighbor(to_id)
+        
+        if weight is not None:
+            self._weights[(from_id, to_id)] = weight
+        
+        return True
+    
+    def remove_edge(self, from_id: str, to_id: str) -> bool:
+        """Удалить ориентированное ребро"""
+        if from_id not in self._edges or to_id not in self._edges[from_id]:
+            return False
+        
+        self._edges[from_id].remove(to_id)
+        self._nodes[from_id].remove_neighbor(to_id)
+        self._weights.pop((from_id, to_id), None)
+        
+        return True
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'DirectedGraph':
+        """Создать ориентированный граф из словаря"""
+        graph = cls()
+        
+        # Добавляем вершины
+        for node_data in data.get('nodes', []):
+            node = GraphNode.from_dict(node_data)
+            graph._nodes[node.id] = node
+        
+        # Добавляем ребра
+        for edge_data in data.get('edges', []):
+            from_id = edge_data['from']
+            to_id = edge_data['to']
+            weight = edge_data.get('weight')
+            graph.add_edge(from_id, to_id, weight)
+        
+        return graph

@@ -1,0 +1,83 @@
+from typing import Any, List, Set
+
+
+class GraphValidators:
+    """Класс для валидации данных графа"""
+    
+    @staticmethod
+    def validate_node_value(value: Any) -> bool:
+        """
+        Проверить корректность значения вершины
+        
+        Args:
+            value: Значение для проверки
+            
+        Returns:
+            bool: Корректно ли значение
+        """
+        # Значение не должно быть None
+        if value is None:
+            return False
+        
+        # Для строк проверяем, что они не пустые
+        if isinstance(value, str) and not value.strip():
+            return False
+        
+        return True
+    
+    @staticmethod
+    def validate_node_id(node_id: str) -> bool:
+        """
+        Проверить корректность ID вершины
+        
+        Args:
+            node_id: ID для проверки
+            
+        Returns:
+            bool: Корректен ли ID
+        """
+        return bool(node_id and isinstance(node_id, str) and node_id.strip())
+    
+    @staticmethod
+    def validate_weight(weight: Any) -> bool:
+        """
+        Проверить корректность веса ребра
+        
+        Args:
+            weight: Вес для проверки
+            
+        Returns:
+            bool: Корректен ли вес
+        """
+        try:
+            weight_float = float(weight)
+            return weight_float >= 0
+        except (TypeError, ValueError):
+            return False
+    
+    @staticmethod
+    def validate_edge_exists(graph, from_id: str, to_id: str) -> bool:
+        """Проверить существование ребра"""
+        if from_id not in graph._nodes or to_id not in graph._nodes:
+            return False
+        return to_id in graph._nodes[from_id].neighbors
+    
+    @staticmethod
+    def validate_unique_nodes(nodes: List[Any]) -> bool:
+        """
+        Проверить уникальность значений вершин
+        
+        Args:
+            nodes: Список значений вершин
+            
+        Returns:
+            bool: Уникальны ли значения
+        """
+        seen = set()
+        for node in nodes:
+            # Для сложных объектов используем строковое представление
+            key = str(node) if not isinstance(node, (str, int, float, bool)) else node
+            if key in seen:
+                return False
+            seen.add(key)
+        return True

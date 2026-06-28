@@ -1,0 +1,120 @@
+import sys
+import os
+from typing import Optional
+
+# Добавляем путь к модулям
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.graph.graph_factory import GraphFactory
+from src.graph.graph import Graph
+from src.algorithms.traversal import Traversal
+from src.algorithms.shortest_path import ShortestPath
+from src.utils.json_handler import JSONHandler
+from src.utils.validators import GraphValidators
+
+
+class GraphNavigator:
+    """Главный класс приложения Graph Navigator"""
+    
+    def __init__(self):
+        self.graph: Optional[Graph] = None
+        self.graph_type: Optional[str] = None
+        self.running = True
+        
+    def run(self):
+        """Запустить приложение"""
+        print("\n" + "="*60)
+        print("  G R A P H   N A V I G A T O R")
+        print("="*60)
+        print("  Author: Хворостов Роман")
+        print("="*60)
+        
+        while self.running:
+            self.show_menu()
+            choice = input("\nВыберите действие: ").strip()
+            self.handle_choice(choice)
+    
+    def show_menu(self):
+        """Показать главное меню"""
+        print("\n" + "-"*60)
+        print("ГЛАВНОЕ МЕНЮ")
+        print("-"*60)
+        print("1. Создать новый граф")
+        print("2. Добавить вершину")
+        print("3. Добавить ребро")
+        print("4. Удалить вершину")
+        print("5. Удалить ребро")
+        print("6. Показать граф")
+        print("7. Обход графа (BFS)")
+        print("8. Обход графа (DFS)")
+        print("9. Найти кратчайший путь")
+        print("10. Сохранить граф в JSON")
+        print("11. Загрузить граф из JSON")
+        print("12. Информация о графе")
+        print("0. Выход")
+        print("-"*60)
+        
+        if self.graph:
+            print(f"Текущий граф: {self.graph_type or 'Не определен'}")
+            print(f"Вершин: {self.graph.node_count}, Рёбер: {self.graph.edge_count}")
+    
+    def handle_choice(self, choice: str):
+        """Обработать выбор пользователя"""
+        actions = {
+            '1': self.create_graph,
+            '2': self.add_node,
+            '3': self.add_edge,
+            '4': self.remove_node,
+            '5': self.remove_edge,
+            '6': self.show_graph,
+            '7': self.traverse_bfs,
+            '8': self.traverse_dfs,
+            '9': self.find_shortest_path,
+            '10': self.save_graph,
+            '11': self.load_graph,
+            '12': self.show_info,
+            '0': self.exit_app,
+        }
+        
+        action = actions.get(choice)
+        if action:
+            try:
+                action()
+            except Exception as e:
+                print(f"\n❌ Ошибка: {e}")
+        else:
+            print("\n❌ Неверный выбор. Пожалуйста, выберите от 0 до 12.")
+    
+    def create_graph(self):
+        """Создать новый граф"""
+        print("\n" + "-"*40)
+        print("СОЗДАНИЕ НОВОГО ГРАФА")
+        print("-"*40)
+        print("Типы графов:")
+        print("  1. Directed (Ориентированный)")
+        print("  2. Undirected (Неориентированный)")
+        print("  3. Weighted (Взвешенный)")
+        
+        choice = input("Выберите тип графа (1-3): ").strip()
+        
+        type_map = {
+            '1': 'directed',
+            '2': 'undirected',
+            '3': 'weighted'
+        }
+        
+        graph_type = type_map.get(choice)
+        if not graph_type:
+            print("❌ Неверный тип графа")
+            return
+        
+        try:
+            if graph_type == 'weighted':
+                directed = input("Будет ли граф ориентированным? (y/n): ").strip().lower() == 'y'
+                self.graph = GraphFactory.create_graph('weighted', directed=directed)
+                self.graph_type = f"Weighted {'Directed' if directed else 'Undirected'}"
+            else:
+                self.graph = GraphFactory.create_graph(graph_type)
+                self.graph_type = graph_type.capitalize()
+            
+            print(f

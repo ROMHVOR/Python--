@@ -1,0 +1,87 @@
+from typing import Optional, Dict, Any
+from .graph import Graph
+
+
+class WeightedGraph(Graph):
+    """Класс для взвешенного графа (может быть как ориентированным, так и неориентированным)"""
+    
+    def __init__(self, directed: bool = False):
+        """
+        Инициализация взвешенного графа
+        
+        Args:
+            directed: Если True - граф ориентированный, иначе неориентированный
+        """
+        super().__init__()
+        self._directed = directed
+    
+    @property
+    def is_directed(self) -> bool:
+        return self._directed
+    
+    def add_edge(self, from_id: str, to_id: str, weight: Optional[float] = None) -> bool:
+        """Добавить взвешенное ребро"""
+        if weight is None:
+            raise ValueError("Weighted graph requires weight for edges")
+        
+        if from_id not in self._nodes or to_id not in self._nodes:
+            return False
+        
+        if to_id in self._edges[from_id]:
+            return False  # Ребро уже существует
+        
+        # Добавляем ребро
+        self._edges[from_id].add(to_id)
+        self._nodes[from_id].add_neighbor(to_id)
+        self._weights[(from_id, to_id)] = weight
+        
+        if not self._directed:
+            # Для неориентированного графа добавляем обратное ребро
+            self._edges[to_id].add(from_id)
+            self._nodes[to_id].add_neighbor(from_id)
+            self._weights[(to_id, from_id)] = weight
+        
+        return True
+    
+    def remove_edge(self, from_id: str, to_id: str) -> bool:
+        """Удалить взвешенное ребро"""
+        if from_id not in self._edges or to_id not in self._edges[from_id]:
+            return False
+        
+        self._edges[from_id].remove(to_id)
+        self._nodes[from_id].remove_neighbor(to_id)
+        self._weights.pop((from_id, to_id), None)
+        
+        if not self._directed:
+            self._edges[to_id].remove(from_id)
+            self._nodes[to_id].remove_neighbor(from_id)
+            self._weights.pop((to_id, from_id), None)
+        
+        return True
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Преобразовать взвешенный граф в словарь"""
+        data = super().to_dict()
+        data['directed'] = self._directed
+        return data
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'WeightedGraph':
+        """Создать взвешенный граф из словаря"""
+        directed = data.get('directed', False)
+        graph = cls(directed)
+        
+        # Добавляем вершины
+        for node_data in data.get('nodes', []):
+            node = GraphNode.from_dict(node_data)
+            graph._nodes[node.id] = node
+        
+        # Добавляем ребра
+        for edge_data in data.get('edges', []):
+            from_id = edge_data['from']
+            to_id = edge_data['to']
+            weight = edge_data.get('weight')
+            if weight is not None:
+                graph.add_edge(from_id, to_id, weight)
+        
+        return graph

@@ -1,0 +1,55 @@
+from typing import Dict, Any
+from .graph import Graph
+from .directed_graph import DirectedGraph
+from .undirected_graph import UndirectedGraph
+from .weighted_graph import WeightedGraph
+
+
+class GraphFactory:
+    """Фабрика для создания различных типов графов"""
+    
+    _graph_types = {
+        'directed': DirectedGraph,
+        'undirected': UndirectedGraph,
+        'weighted': WeightedGraph,
+    }
+    
+    @classmethod
+    def create_graph(cls, graph_type: str, **kwargs) -> Graph:
+        """
+        Создать граф указанного типа
+        
+        Args:
+            graph_type: Тип графа ('directed', 'undirected', 'weighted')
+            **kwargs: Дополнительные параметры для создания графа
+            
+        Returns:
+            Graph: Созданный граф
+            
+        Raises:
+            ValueError: Если указан неизвестный тип графа
+        """
+        if graph_type not in cls._graph_types:
+            raise ValueError(f"Unknown graph type: {graph_type}. Available: {list(cls._graph_types.keys())}")
+        
+        graph_class = cls._graph_types[graph_type]
+        
+        # Для взвешенного графа можно передать параметр directed
+        if graph_type == 'weighted':
+            directed = kwargs.get('directed', False)
+            return graph_class(directed)
+        
+        return graph_class()
+    
+    @classmethod
+    def register_graph_type(cls, name: str, graph_class: type) -> None:
+        """
+        Зарегистрировать новый тип графа
+        
+        Args:
+            name: Имя типа
+            graph_class: Класс графа
+        """
+        if not issubclass(graph_class, Graph):
+            raise ValueError(f"{graph_class} must be a subclass of Graph")
+        cls._graph_types[name] = graph_class

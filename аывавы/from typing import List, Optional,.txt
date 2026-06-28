@@ -1,0 +1,108 @@
+from typing import List, Optional, Callable, Any
+from collections import deque
+from ..graph.graph import Graph
+
+
+class Traversal:
+    """Класс для обхода графа"""
+    
+    @staticmethod
+    def bfs(graph: Graph, start_id: str, visit_callback: Optional[Callable] = None) -> List[str]:
+        """
+        Обход графа в ширину (BFS)
+        
+        Args:
+            graph: Граф для обхода
+            start_id: ID начальной вершины
+            visit_callback: Функция обратного вызова при посещении вершины
+            
+        Returns:
+            List[str]: Список ID вершин в порядке обхода
+        """
+        if start_id not in graph._nodes:
+            raise ValueError(f"Vertex {start_id} not found in graph")
+        
+        visited = set()
+        queue = deque([start_id])
+        visited.add(start_id)
+        order = []
+        
+        while queue:
+            node_id = queue.popleft()
+            order.append(node_id)
+            
+            if visit_callback:
+                visit_callback(graph.get_node(node_id))
+            
+            # Получаем соседей
+            for neighbor in graph.get_neighbors(node_id):
+                if neighbor.id not in visited:
+                    visited.add(neighbor.id)
+                    queue.append(neighbor.id)
+        
+        return order
+    
+    @staticmethod
+    def dfs(graph: Graph, start_id: str, visit_callback: Optional[Callable] = None) -> List[str]:
+        """
+        Обход графа в глубину (DFS) - итеративная версия
+        
+        Args:
+            graph: Граф для обхода
+            start_id: ID начальной вершины
+            visit_callback: Функция обратного вызова при посещении вершины
+            
+        Returns:
+            List[str]: Список ID вершин в порядке обхода
+        """
+        if start_id not in graph._nodes:
+            raise ValueError(f"Vertex {start_id} not found in graph")
+        
+        visited = set()
+        stack = [start_id]
+        order = []
+        
+        while stack:
+            node_id = stack.pop()
+            
+            if node_id in visited:
+                continue
+            
+            visited.add(node_id)
+            order.append(node_id)
+            
+            if visit_callback:
+                visit_callback(graph.get_node(node_id))
+            
+            # Получаем соседей в обратном порядке для сохранения порядка
+            neighbors = [n.id for n in graph.get_neighbors(node_id)]
+            for neighbor_id in reversed(neighbors):
+                if neighbor_id not in visited:
+                    stack.append(neighbor_id)
+        
+        return order
+    
+    @staticmethod
+    def dfs_recursive(graph: Graph, start_id: str, visit_callback: Optional[Callable] = None) -> List[str]:
+        """
+        Обход графа в глубину (DFS) - рекурсивная версия
+        """
+        if start_id not in graph._nodes:
+            raise ValueError(f"Vertex {start_id} not found in graph")
+        
+        visited = set()
+        order = []
+        
+        def _dfs(node_id: str):
+            visited.add(node_id)
+            order.append(node_id)
+            
+            if visit_callback:
+                visit_callback(graph.get_node(node_id))
+            
+            for neighbor in graph.get_neighbors(node_id):
+                if neighbor.id not in visited:
+                    _dfs(neighbor.id)
+        
+        _dfs(start_id)
+        return order

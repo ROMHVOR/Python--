@@ -1,0 +1,96 @@
+import json
+from typing import Dict, Any, Optional
+from ..graph.graph import Graph
+from ..graph.graph_factory import GraphFactory
+
+
+class JSONHandler:
+    """Класс для сохранения и загрузки графов в JSON формате"""
+    
+    @staticmethod
+    def save_graph(graph: Graph, filepath: str) -> None:
+        """
+        Сохранить граф в JSON файл
+        
+        Args:
+            graph: Граф для сохранения
+            filepath: Путь к файлу
+        """
+        data = graph.to_dict()
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    
+    @staticmethod
+    def load_graph(filepath: str) -> Graph:
+        """
+        Загрузить граф из JSON файла
+        
+        Args:
+            filepath: Путь к файлу
+            
+        Returns:
+            Graph: Загруженный граф
+            
+        Raises:
+            ValueError: Если файл поврежден или содержит неизвестный тип графа
+        """
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        graph_type = data.get('type')
+        if not graph_type:
+            raise ValueError("Invalid JSON: missing graph type")
+        
+        # Создаем граф с помощью фабрики
+        if graph_type == 'WeightedGraph':
+            graph = GraphFactory.create_graph('weighted', directed=data.get('directed', False))
+        else:
+            graph_type_lower = graph_type.lower().replace('graph', '')
+            if graph_type_lower in ['directed', 'undirected']:
+                graph = GraphFactory.create_graph(graph_type_lower)
+            else:
+                raise ValueError(f"Unknown graph type: {graph_type}")
+        
+        # Загружаем данные
+        # Добавляем вершины
+        for node_data in data.get('nodes', []):
+            from ..graph.graph_node import GraphNode
+            node = GraphNode.from_dict(node_data)
+            graph._nodes[node.id] = node
+        
+        # Добавляем ребра
+        for edge_data in data.get('edges', []):
+            from_id = edge_data['from']
+            to_id = edge_data['to']
+            weight = edge_data.get('weight')
+            graph.add_edge(from_id, to_id, weight)
+        
+        return graph
+    
+    @staticmethod
+    def export_to_string(graph: Graph) -> str:
+        """Экспортировать граф в JSON строку"""
+        return json.dumps(graph.to_dict(), indent=2, ensure_ascii=False)
+    
+    @staticmethod
+    def import_from_string(json_str: str) -> Graph:
+        """Импортировать граф из JSON строки"""
+        data = json.loads(json_str)
+        # Используем тот же метод, что и для загрузки из файла
+        # Но сначала нужно определить тип
+        graph_type = data.get('type')
+        if not graph_type:
+            raise ValueError("Invalid JSON: missing graph type")
+        
+        # Создаем временный файл для загрузки
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            f.write(json_str)
+            temp_path = f.name
+        
+        try:
+            return JSONHandler.load_graph(temp_path)
+        finally:
+            import os
+            os.unlink(temp_path)
