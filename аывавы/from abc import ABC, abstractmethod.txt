@@ -1,0 +1,149 @@
+from abc import ABC, abstractmethod
+from typing import List, Optional, Any, Dict, Set, Tuple
+from collections import defaultdict
+from .graph_node import GraphNode
+
+
+class Graph(ABC):
+    """Абстрактный базовый класс для всех графов"""
+    
+    def __init__(self):
+        self._nodes: Dict[str, GraphNode] = {}
+        self._edges: Dict[str, Set[str]] = defaultdict(set)
+        self._weights: Dict[Tuple[str, str], float] = {}
+    
+    @abstractmethod
+    def add_edge(self, from_id: str, to_id: str, weight: Optional[float] = None) -> bool:
+        """
+        Добавить ребро между вершинами
+        
+        Args:
+            from_id: ID начальной вершины
+            to_id: ID конечной вершины
+            weight: Вес ребра (для взвешенных графов)
+        
+        Returns:
+            bool: Успешно ли добавлено ребро
+        """
+        pass
+    
+    @abstractmethod
+    def remove_edge(self, from_id: str, to_id: str) -> bool:
+        """Удалить ребро между вершинами"""
+        pass
+    
+    def add_node(self, value: Any, node_id: Optional[str] = None) -> GraphNode:
+        """
+        Добавить вершину в граф
+        
+        Args:
+            value: Значение вершины
+            node_id: ID вершины (опционально)
+        
+        Returns:
+            GraphNode: Созданная вершина
+        
+        Raises:
+            ValueError: Если вершина с таким ID уже существует
+        """
+        if node_id and node_id in self._nodes:
+            raise ValueError(f"Vertex with id {node_id} already exists")
+        
+        node = GraphNode(value, node_id)
+        self._nodes[node.id] = node
+        return node
+    
+    def remove_node(self, node_id: str) -> bool:
+        """
+        Удалить вершину и все связанные с ней ребра
+        
+        Args:
+            node_id: ID вершины для удаления
+        
+        Returns:
+            bool: Успешно ли удалена вершина
+        """
+        if node_id not in self._nodes:
+            return False
+        
+        # Удаляем все ребра, связанные с вершиной
+        for neighbor in list(self._edges[node_id]):
+            self.remove_edge(node_id, neighbor)
+        
+        # Удаляем вершину из всех списков соседей
+        for node in self._nodes.values():
+            node.remove_neighbor(node_id)
+        
+        # Удаляем саму вершину
+        del self._nodes[node_id]
+        del self._edges[node_id]
+        
+        # Удаляем веса связанных ребер
+        self._weights = {
+            (u, v): w for (u, v), w in self._weights.items()
+            if u != node_id and v != node_id
+        }
+        
+        return True
+    
+    def get_node(self, node_id: str) -> Optional[GraphNode]:
+        """Получить вершину по ID"""
+        return self._nodes.get(node_id)
+    
+    def get_all_nodes(self) -> List[GraphNode]:
+        """Получить список всех вершин"""
+        return list(self._nodes.values())
+    
+    def get_neighbors(self, node_id: str) -> List[GraphNode]:
+        """Получить список соседей вершины"""
+        if node_id not in self._nodes:
+            return []
+        
+        neighbors = []
+        for neighbor_id in self._nodes[node_id].neighbors:
+            if neighbor_id in self._nodes:
+                neighbors.append(self._nodes[neighbor_id])
+        return neighbors
+    
+    def get_edge_weight(self, from_id: str, to_id: str) -> Optional[float]:
+        """Получить вес ребра"""
+        return self._weights.get((from_id, to_id))
+    
+    def get_all_edges(self) -> List[Tuple[str, str, Optional[float]]]:
+        """Получить список всех ребер"""
+        edges = []
+        for from_id, to_ids in self._edges.items():
+            for to_id in to_ids:
+                weight = self._weights.get((from_id, to_id))
+                edges.append((from_id, to_id, weight))
+        return edges
+    
+    @property
+    def node_count(self) -> int:
+        """Количество вершин в графе"""
+        return len(self._nodes)
+    
+    @property
+    def edge_count(self) -> int:
+        """Количество ребер в графе"""
+        return sum(len(neighbors) for neighbors in self._edges.values())
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Преобразовать граф в словарь для JSON"""
+        return {
+            'type': self.__class__.__name__,
+            'nodes': [node.to_dict() for node in self._nodes.values()],
+            'edges': [
+                {
+                    'from': from_id,
+                    'to': to_id,
+                    'weight': weight
+                }
+                for from_id, to_id, weight in self.get_all_edges()
+            ]
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'Graph':
+        """Создать граф из словаря (должен быть переопределен в подклассах)"""
+        raise NotImplementedError("Subclasses must implement from_dict")
